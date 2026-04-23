@@ -653,15 +653,15 @@
       <div class="input-label"><span class="dot"></span>Konto saldo</div>
       <div class="input-row">
         <input class="input-field" type="number" id="balance" placeholder="10 000" inputmode="decimal" />
-        <div class="currency-chip" id="baseCurrencyLabel">NOK</div>
+        <div class="currency-chip" id="baseCurrencyLabel">USD</div>
       </div>
     </div>
 
     <div class="input-card">
-      <div class="input-label"><span class="dot"></span>Kurs (1 enhet base → NOK)</div>
+      <div class="input-label"><span class="dot"></span>Kurs (1 enhet base → USD)</div>
       <div class="input-row">
         <input class="input-field" type="number" id="rate" placeholder="0.00" inputmode="decimal" />
-        <div class="currency-chip" id="rateLabel">NOK</div>
+        <div class="currency-chip" id="rateLabel">USD</div>
       </div>
     </div>
   </div>
@@ -670,35 +670,35 @@
   <div class="section">
     <div class="section-label">Valuta par</div>
     <div class="currency-selector" id="pairSelector">
-      <button class="currency-btn active" data-pair="EUR/NOK" data-flag="🇪🇺🇳🇴" data-desc="Euro / Krone" onclick="selectPair(this)">
-        <span class="pair-flag">🇪🇺</span>
-        <div class="pair-info">
-          <div class="pair-name">EUR/NOK</div>
-          <div class="pair-desc">Euro / Krone</div>
-        </div>
-        <div class="pair-check">✓</div>
-      </button>
-      <button class="currency-btn" data-pair="USD/NOK" data-flag="🇺🇸🇳🇴" data-desc="Dollar / Krone" onclick="selectPair(this)">
-        <span class="pair-flag">🇺🇸</span>
-        <div class="pair-info">
-          <div class="pair-name">USD/NOK</div>
-          <div class="pair-desc">Dollar / Krone</div>
-        </div>
-        <div class="pair-check">✓</div>
-      </button>
-      <button class="currency-btn" data-pair="GBP/NOK" data-flag="🇬🇧🇳🇴" data-desc="Pund / Krone" onclick="selectPair(this)">
-        <span class="pair-flag">🇬🇧</span>
-        <div class="pair-info">
-          <div class="pair-name">GBP/NOK</div>
-          <div class="pair-desc">Pund / Krone</div>
-        </div>
-        <div class="pair-check">✓</div>
-      </button>
-      <button class="currency-btn" data-pair="EUR/USD" data-flag="🇪🇺🇺🇸" data-desc="Euro / Dollar" onclick="selectPair(this)">
+      <button class="currency-btn active" data-pair="EUR/USD" data-flag="🇪🇺🇺🇸" data-desc="Euro / Dollar" onclick="selectPair(this)">
         <span class="pair-flag">🇪🇺</span>
         <div class="pair-info">
           <div class="pair-name">EUR/USD</div>
           <div class="pair-desc">Euro / Dollar</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+      <button class="currency-btn" data-pair="GBP/USD" data-flag="🇬🇧🇺🇸" data-desc="Pund / Dollar" onclick="selectPair(this)">
+        <span class="pair-flag">🇬🇧</span>
+        <div class="pair-info">
+          <div class="pair-name">GBP/USD</div>
+          <div class="pair-desc">Pund / Dollar</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+      <button class="currency-btn" data-pair="USD/JPY" data-flag="🇺🇸🇯🇵" data-desc="Dollar / Yen" onclick="selectPair(this)">
+        <span class="pair-flag">🇺🇸</span>
+        <div class="pair-info">
+          <div class="pair-name">USD/JPY</div>
+          <div class="pair-desc">Dollar / Yen</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+      <button class="currency-btn" data-pair="USD/CHF" data-flag="🇺🇸🇨🇭" data-desc="Dollar / Frank" onclick="selectPair(this)">
+        <span class="pair-flag">🇺🇸</span>
+        <div class="pair-info">
+          <div class="pair-name">USD/CHF</div>
+          <div class="pair-desc">Dollar / Frank</div>
         </div>
         <div class="pair-check">✓</div>
       </button>
@@ -831,7 +831,7 @@
 </div>
 
 <script>
-  let selectedPair = 'EUR/NOK';
+  let selectedPair = 'EUR/USD';
   let selectedLev = 1;
   let marginPct = 80;
 
@@ -839,19 +839,21 @@
     document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedPair = btn.dataset.pair;
-    // Suggest a rate
     const rates = {
-      'EUR/NOK': 11.75,
-      'USD/NOK': 10.82,
-      'GBP/NOK': 13.45,
-      'EUR/USD': 1.09
+      'EUR/USD': 1.09,
+      'GBP/USD': 1.27,
+      'USD/JPY': 154.50,
+      'USD/CHF': 0.90
     };
     if (rates[selectedPair]) {
       document.getElementById('rate').value = rates[selectedPair];
       document.getElementById('rate').placeholder = rates[selectedPair].toFixed(2);
     }
+    // For USD/XXX pairs the quote is not USD — show the quote currency
+    // But all calculations use USD as account currency
     const quote = selectedPair.split('/')[1];
-    document.getElementById('rateLabel').textContent = quote;
+    // Rate label: always show what the rate represents
+    document.getElementById('rateLabel').textContent = quote === 'USD' ? 'USD' : quote + '/USD';
   }
 
   function selectLev(btn) {
@@ -897,30 +899,37 @@
     const quote = selectedPair.split('/')[1];
     const base = selectedPair.split('/')[0];
 
-    // Pip size: JPY pairs = 0.01, others = 0.0001
-    // For NOK pairs quoted as X/NOK, pip value is in NOK directly
+    // Pip size
     const isJPY = selectedPair.includes('JPY');
     const pipSize = isJPY ? 0.01 : 0.0001;
 
-    // Pip value per unit in quote currency = pipSize
-    // Total pip value for position = units * pipSize
-    // For X/NOK pairs: pip value is already in NOK (quote)
-    // For EUR/USD: pip value is in USD, convert to account currency if needed
-    // We keep everything in quote currency for simplicity
-    const pipValuePerUnit = pipSize; // value of 1 pip per 1 unit, in quote currency
+    // Pip value in USD per unit:
+    // For XXX/USD (e.g. EUR/USD, GBP/USD): pip value = pipSize USD per unit
+    // For USD/XXX (e.g. USD/JPY, USD/CHF): pip value = pipSize / rate USD per unit
+    let pipValuePerUnit;
+    if (quote === 'USD') {
+      pipValuePerUnit = pipSize;
+    } else {
+      // USD is base, quote is foreign — pip value in USD = pipSize / rate
+      pipValuePerUnit = pipSize / rate;
+    }
     const pipValueTotal = units > 0 ? units * pipValuePerUnit : 0;
 
-    // Margin required for given position (if units provided)
+    // Position value in USD:
+    // For XXX/USD: value = units * rate
+    // For USD/XXX: value = units (already in USD)
     let positionValue = 0;
     let requiredMargin = 0;
 
     if (units && units > 0) {
-      positionValue = units * rate;
+      positionValue = quote === 'USD' ? units * rate : units;
       requiredMargin = (positionValue / selectedLev) * (marginPct / 100);
     }
 
-    const maxUnits = (balance * selectedLev) / rate / (marginPct / 100);
-    const maxPositionValue = maxUnits * rate;
+    const maxUnits = quote === 'USD'
+      ? (balance * selectedLev) / rate / (marginPct / 100)
+      : (balance * selectedLev) / (marginPct / 100);
+    const maxPositionValue = quote === 'USD' ? maxUnits * rate : maxUnits;
     const freeMargin = balance - requiredMargin;
     const marginLevel = requiredMargin > 0 ? (balance / requiredMargin) * 100 : null;
 
@@ -946,7 +955,7 @@
         status = 'over';
         statusText = 'Over grense';
         statusClass = 'status-danger';
-        warnMsg = `Posisjonen krever ${fmt(requiredMargin)} ${quote} i margin, men du har bare ${fmt(balance)} ${quote}. Reduser posisjonsstørrelse.`;
+        warnMsg = `Posisjonen krever ${fmt(requiredMargin)} USD i margin, men du har bare ${fmt(balance)} USD. Reduser posisjonsstørrelse.`;
       } else if (requiredMargin > balance * 0.9) {
         status = 'warn';
         statusText = 'Nær grense';
@@ -956,7 +965,7 @@
         warnMsg = `Posisjonen er innenfor margin krav. Tåler ${pipTolerance ? fmt(pipTolerance, 0) + ' pips' : '—'} bevegelse mot deg.`;
       }
     } else {
-      warnMsg = `Med ${fmt(balance, 0)} i kapital og ${selectedLev}:1 gearing kan du handle opptil ${fmt(maxUnits, 0)} enheter. Skriv inn antall enheter for pip-beregning.`;
+      warnMsg = `Med ${fmt(balance, 0)} USD og ${selectedLev}:1 gearing kan du handle opptil ${fmt(maxUnits, 0)} enheter. Skriv inn antall enheter for pip-beregning.`;
     }
 
     // Show results
@@ -968,13 +977,13 @@
       fmt(maxUnits, 0) + '<span class="result-main-currency">enheter</span>';
 
     document.getElementById('requiredMargin').textContent =
-      units && units > 0 ? fmt(requiredMargin, 2) + ' ' + quote : '—';
+      units && units > 0 ? fmt(requiredMargin, 2) + ' USD' : '—';
 
     document.getElementById('freeMargin').textContent =
-      units && units > 0 ? fmt(freeMargin, 2) + ' ' + quote : fmt(balance, 2) + ' ' + quote;
+      units && units > 0 ? fmt(freeMargin, 2) + ' USD' : fmt(balance, 2) + ' USD';
 
     document.getElementById('posValue').textContent =
-      units && units > 0 ? fmt(positionValue, 2) + ' ' + quote : fmt(maxPositionValue, 2) + ' ' + quote;
+      units && units > 0 ? fmt(positionValue, 2) + ' USD' : fmt(maxPositionValue, 2) + ' USD';
 
     document.getElementById('marginLevel').textContent =
       marginLevel ? fmt(marginLevel, 1) + '%' : '∞';
@@ -989,8 +998,8 @@
     if (pipTolerance !== null) {
       pipSection.style.display = 'block';
       document.getElementById('pipValue').textContent = fmt(pipTolerance, 0);
-      document.getElementById('pipWorth').textContent = fmt(pipValueDisplay, 4) + ' ' + quote + '/pip';
-      document.getElementById('pipLoss').textContent = fmt(pipLossDisplay, 2) + ' ' + quote;
+      document.getElementById('pipWorth').textContent = fmt(pipValueDisplay, 4) + ' USD/pip';
+      document.getElementById('pipLoss').textContent = fmt(pipLossDisplay, 2) + ' USD';
 
       // Color pip value based on risk
       const pipEl = document.getElementById('pipValue');
@@ -1022,8 +1031,8 @@
   // Init slider visual
   document.getElementById('marginSlider').style.setProperty('--pct', '80%');
 
-  // Set default rate suggestion for EUR/NOK
-  document.getElementById('rate').placeholder = '11.75';
+  // Set default rate suggestion for EUR/USD
+  document.getElementById('rate').placeholder = '1.09';
 
   // Register service worker for PWA
   if ('serviceWorker' in navigator) {
