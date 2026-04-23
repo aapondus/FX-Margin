@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FX Margin">
+<meta name="description" content="Valuta margin kalkulator – beregn handelsgrense og pip-toleranse">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>FX Margin Kalkulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060b18;
+    --surface: #0e1628;
+    --surface2: #162036;
+    --border: rgba(99, 179, 237, 0.12);
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --green: #10b981;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Manrope', sans-serif;
+    --radius: 16px;
+    --safe-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100dvh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: -100px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    padding: 0 0 calc(var(--safe-bottom) + 80px) 0;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 52px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(6,11,24,0.95) 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+  }
+
+  .header-left h1 {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .header-left p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .margin-badge {
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2));
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent2);
+    font-weight: 700;
+  }
+
+  /* Sections */
+  .section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Input cards */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .input-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .input-card:focus-within {
+    border-color: rgba(59,130,246,0.4);
+  }
+  .input-card:focus-within::before {
+    opacity: 1;
+  }
+
+  .input-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .input-label .dot {
+    width: 5px;
+    height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .input-field {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    width: 100%;
+  }
+  .input-field::placeholder {
+    color: rgba(100,116,139,0.4);
+  }
+
+  .currency-chip {
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Currency selector */
+  .currency-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .currency-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text);
+    font-family: var(--sans);
+  }
+  .currency-btn:active {
+    transform: scale(0.97);
+    background: var(--surface2);
+  }
+  .currency-btn.active {
+    border-color: rgba(59,130,246,0.5);
+    background: rgba(59,130,246,0.08);
+  }
+
+  .pair-flag {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .pair-info {
+    flex: 1;
+    text-align: left;
+  }
+  .pair-name {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .pair-desc {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .pair-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.15s;
+  }
+  .currency-btn.active .pair-check {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Leverage selector */
+  .leverage-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .lev-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+    min-width: 52px;
+    text-align: center;
+  }
+  .lev-btn:active { transform: scale(0.95); }
+  .lev-btn.active {
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.15));
+    border-color: rgba(59,130,246,0.5);
+    color: var(--accent2);
+  }
+
+  /* Margin slider */
+  .slider-wrapper {
+    padding: 8px 0;
+  }
+  .margin-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--pct, 80%), rgba(99,179,237,0.15) var(--pct, 80%));
+    outline: none;
+    cursor: pointer;
+  }
+  .margin-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 12px rgba(59,130,246,0.4);
+    cursor: pointer;
+  }
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+  }
+  .slider-value {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .slider-value span { font-size: 14px; color: var(--muted); }
+
+  /* Calculate button */
+  .calc-btn {
+    margin: 20px;
+    width: calc(100% - 40px);
+    padding: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+  }
+  .calc-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  }
+  .calc-btn:active {
+    transform: scale(0.97);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.2);
+  }
+
+  /* Results */
+  .results {
+    margin: 0 20px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .results.show { display: block; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(6,182,212,0.1));
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .results-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+  }
+  .status-pill {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+  .status-ok { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .status-warn { background: rgba(245,158,11,0.15); color: var(--orange); border: 1px solid rgba(245,158,11,0.3); }
+  .status-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+  .result-main {
+    padding: 20px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-main-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .result-main-value {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--green);
+    line-height: 1;
+  }
+  .result-main-currency {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .result-item {
+    padding: 14px 18px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .result-item:nth-child(even) { border-right: none; }
+  .result-item:nth-last-child(-n+2) { border-bottom: none; }
+
+  .result-item-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .result-item-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .result-item-value.accent { color: var(--accent2); }
+  .result-item-value.orange { color: var(--orange); }
+
+  /* Warning bar */
+  .warning-bar {
+    margin: 0 20px 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+  .warning-bar.show { display: flex; }
+  .warning-bar.warn {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: var(--orange);
+  }
+  .warning-bar.danger {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: var(--red);
+  }
+  .warning-bar.ok {
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.2);
+    color: var(--green);
+  }
+  .warn-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* Pip section */
+  .pip-section {
+    border-top: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(16,185,129,0.05), rgba(6,182,212,0.05));
+  }
+  .pip-header {
+    padding: 12px 18px 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pip-icon { font-size: 14px; }
+  .pip-main {
+    padding: 10px 18px 12px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .pip-value-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .pip-value {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .pip-unit {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .pip-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+  .pip-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--border);
+  }
+  .pip-detail {
+    padding: 10px 18px;
+    border-right: 1px solid var(--border);
+  }
+  .pip-detail:last-child { border-right: none; }
+  .pip-detail-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .pip-detail-value {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  /* Info tooltip */
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .info-tag {
+    background: rgba(99,179,237,0.08);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* Bottom nav spacing */
+  .spacer { height: 20px; }
+
+  /* Pulse animation for calculating */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .calculating { animation: pulse 1s ease-in-out infinite; }
+
+  /* Divider line in results */
+  .formula-row {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    background: rgba(255,255,255,0.01);
+  }
+  .formula-row span {
+    color: rgba(99,179,237,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>FX Margin</h1>
+      <p>Valuta handelsgrense</p>
+    </div>
+    <div class="margin-badge">80% Margin</div>
+  </div>
+
+  <!-- Konto saldo -->
+  <div class="section">
+    <div class="section-label">Konto</div>
+    <div class="input-card">
+      <div class="input-label"><span class="dot"></span>Konto saldo</div>
+      <div class="input-row">
+        <input class="input-field" type="number" id="balance" placeholder="10 000" inputmode="decimal" />
+        <div class="currency-chip" id="baseCurrencyLabel">USD</div>
+      </div>
+    </div>
+
+    <div class="input-card">
+      <div class="input-label"><span class="dot"></span>Kurs (1 enhet base → USD)</div>
+      <div class="input-row">
+        <input class="input-field" type="number" id="rate" placeholder="0.00" inputmode="decimal" />
+        <div class="currency-chip" id="rateLabel">USD</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Valuta par -->
+  <div class="section">
+    <div class="section-label">Valuta par</div>
+    <div class="currency-selector" id="pairSelector">
+      <button class="currency-btn active" data-pair="EUR/USD" data-flag="🇪🇺🇺🇸" data-desc="Euro / Dollar" onclick="selectPair(this)">
+        <span class="pair-flag">🇪🇺</span>
+        <div class="pair-info">
+          <div class="pair-name">EUR/USD</div>
+          <div class="pair-desc">Euro / Dollar</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+      <button class="currency-btn" data-pair="GBP/USD" data-flag="🇬🇧🇺🇸" data-desc="Pund / Dollar" onclick="selectPair(this)">
+        <span class="pair-flag">🇬🇧</span>
+        <div class="pair-info">
+          <div class="pair-name">GBP/USD</div>
+          <div class="pair-desc">Pund / Dollar</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+      <button class="currency-btn" data-pair="USD/JPY" data-flag="🇺🇸🇯🇵" data-desc="Dollar / Yen" onclick="selectPair(this)">
+        <span class="pair-flag">🇺🇸</span>
+        <div class="pair-info">
+          <div class="pair-name">USD/JPY</div>
+          <div class="pair-desc">Dollar / Yen</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+      <button class="currency-btn" data-pair="USD/CHF" data-flag="🇺🇸🇨🇭" data-desc="Dollar / Frank" onclick="selectPair(this)">
+        <span class="pair-flag">🇺🇸</span>
+        <div class="pair-info">
+          <div class="pair-name">USD/CHF</div>
+          <div class="pair-desc">Dollar / Frank</div>
+        </div>
+        <div class="pair-check">✓</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Kontraktstørrelse -->
+  <div class="section">
+    <div class="section-label">Kontraktstørrelse (lots)</div>
+    <div class="info-row">
+      <span class="info-tag">1 standard lot = 100 000</span>
+      <span class="info-tag">1 mini = 10 000</span>
+      <span class="info-tag">1 micro = 1 000</span>
+    </div>
+    <div class="input-card">
+      <div class="input-label"><span class="dot"></span>Antall enheter du ønsker å handle</div>
+      <div class="input-row">
+        <input class="input-field" type="number" id="units" placeholder="100 000" inputmode="decimal" />
+        <div class="currency-chip">UNITS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gearing -->
+  <div class="section">
+    <div class="section-label">Gearing / Leverage</div>
+    <div class="leverage-row" id="levSelector">
+      <button class="lev-btn active" data-lev="1" onclick="selectLev(this)">1:1</button>
+      <button class="lev-btn" data-lev="2" onclick="selectLev(this)">1:2</button>
+      <button class="lev-btn" data-lev="5" onclick="selectLev(this)">1:5</button>
+      <button class="lev-btn" data-lev="10" onclick="selectLev(this)">1:10</button>
+      <button class="lev-btn" data-lev="20" onclick="selectLev(this)">1:20</button>
+      <button class="lev-btn" data-lev="30" onclick="selectLev(this)">1:30</button>
+      <button class="lev-btn" data-lev="50" onclick="selectLev(this)">1:50</button>
+      <button class="lev-btn" data-lev="100" onclick="selectLev(this)">1:100</button>
+      <button class="lev-btn" data-lev="200" onclick="selectLev(this)">1:200</button>
+      <button class="lev-btn" data-lev="300" onclick="selectLev(this)">1:300</button>
+      <button class="lev-btn" data-lev="400" onclick="selectLev(this)">1:400</button>
+      <button class="lev-btn" data-lev="500" onclick="selectLev(this)">1:500</button>
+    </div>
+  </div>
+
+  <!-- Margin krav -->
+  <div class="section">
+    <div class="section-label">Margin krav</div>
+    <div class="slider-value" id="marginDisplay">80 <span>%</span></div>
+    <div class="slider-wrapper">
+      <input type="range" class="margin-slider" id="marginSlider" min="10" max="100" value="80" step="5" oninput="updateSlider(this)" />
+      <div class="slider-labels">
+        <span>10%</span>
+        <span>Fri margin</span>
+        <span>100%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Beregn knapp -->
+  <button class="calc-btn" onclick="calculate()">
+    BEREGN HANDELSGRENSE
+  </button>
+
+  <!-- Varsel -->
+  <div class="warning-bar" id="warningBar">
+    <span class="warn-icon" id="warnIcon">⚠️</span>
+    <span id="warnText"></span>
+  </div>
+
+  <!-- Resultater -->
+  <div class="results" id="results">
+    <div class="results-header">
+      <div class="results-title">Resultat</div>
+      <div class="status-pill" id="statusPill">OK</div>
+    </div>
+
+    <div class="result-main">
+      <div class="result-main-label">Maks du kan handle</div>
+      <div class="result-main-value" id="maxTrade">—</div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-item-label">Påkrevd margin</div>
+        <div class="result-item-value accent" id="requiredMargin">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Fri margin</div>
+        <div class="result-item-value" id="freeMargin">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Posisjonens verdi</div>
+        <div class="result-item-value orange" id="posValue">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Margin nivå</div>
+        <div class="result-item-value" id="marginLevel">—</div>
+      </div>
+    </div>
+
+    <!-- Pip tolerance section -->
+    <div class="pip-section" id="pipSection" style="display:none;">
+      <div class="pip-header">
+        <span class="pip-icon">📏</span>
+        <span>Pip-toleranse ved 80% margin</span>
+      </div>
+      <div class="pip-main">
+        <div class="pip-value-wrap">
+          <div class="pip-value" id="pipValue">—</div>
+          <div class="pip-unit">pips</div>
+        </div>
+        <div class="pip-sub" id="pipSub">før margin krav nås</div>
+      </div>
+      <div class="pip-detail-grid">
+        <div class="pip-detail">
+          <div class="pip-detail-label">Verdi per pip</div>
+          <div class="pip-detail-value" id="pipWorth">—</div>
+        </div>
+        <div class="pip-detail">
+          <div class="pip-detail-label">Maks tap</div>
+          <div class="pip-detail-value" id="pipLoss">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula-row">
+      <span>Formel:</span> Pips = Fri margin / (Enheter × Pip-verdi)
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script>
+  let selectedPair = 'EUR/USD';
+  let selectedLev = 1;
+  let marginPct = 80;
+
+  function selectPair(btn) {
+    document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedPair = btn.dataset.pair;
+    const rates = {
+      'EUR/USD': 1.09,
+      'GBP/USD': 1.27,
+      'USD/JPY': 154.50,
+      'USD/CHF': 0.90
+    };
+    if (rates[selectedPair]) {
+      document.getElementById('rate').value = rates[selectedPair];
+      document.getElementById('rate').placeholder = rates[selectedPair].toFixed(2);
+    }
+    // For USD/XXX pairs the quote is not USD — show the quote currency
+    // But all calculations use USD as account currency
+    const quote = selectedPair.split('/')[1];
+    // Rate label: always show what the rate represents
+    document.getElementById('rateLabel').textContent = quote === 'USD' ? 'USD' : quote + '/USD';
+  }
+
+  function selectLev(btn) {
+    document.querySelectorAll('.lev-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedLev = parseInt(btn.dataset.lev);
+  }
+
+  function updateSlider(input) {
+    const val = parseInt(input.value);
+    marginPct = val;
+    document.getElementById('marginDisplay').innerHTML = val + ' <span>%</span>';
+    input.style.setProperty('--pct', val + '%');
+  }
+
+  function fmt(n, decimals = 0) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return n.toLocaleString('nb-NO', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  }
+
+  function calculate() {
+    const balance = parseFloat(document.getElementById('balance').value);
+    const rate = parseFloat(document.getElementById('rate').value);
+    const units = parseFloat(document.getElementById('units').value);
+
+    const wb = document.getElementById('warningBar');
+    const results = document.getElementById('results');
+    wb.className = 'warning-bar';
+    results.className = 'results';
+
+    if (!balance || balance <= 0) {
+      showWarn('warn', '⚠️', 'Skriv inn konto saldo for å beregne.');
+      return;
+    }
+    if (!rate || rate <= 0) {
+      showWarn('warn', '⚠️', 'Skriv inn valutakursen for å beregne.');
+      return;
+    }
+
+    const quote = selectedPair.split('/')[1];
+    const base = selectedPair.split('/')[0];
+
+    // Pip size
+    const isJPY = selectedPair.includes('JPY');
+    const pipSize = isJPY ? 0.01 : 0.0001;
+
+    // Pip value in USD per unit:
+    // For XXX/USD (e.g. EUR/USD, GBP/USD): pip value = pipSize USD per unit
+    // For USD/XXX (e.g. USD/JPY, USD/CHF): pip value = pipSize / rate USD per unit
+    let pipValuePerUnit;
+    if (quote === 'USD') {
+      pipValuePerUnit = pipSize;
+    } else {
+      // USD is base, quote is foreign — pip value in USD = pipSize / rate
+      pipValuePerUnit = pipSize / rate;
+    }
+    const pipValueTotal = units > 0 ? units * pipValuePerUnit : 0;
+
+    // Position value in USD:
+    // For XXX/USD: value = units * rate
+    // For USD/XXX: value = units (already in USD)
+    let positionValue = 0;
+    let requiredMargin = 0;
+
+    if (units && units > 0) {
+      positionValue = quote === 'USD' ? units * rate : units;
+      requiredMargin = (positionValue / selectedLev) * (marginPct / 100);
+    }
+
+    const maxUnits = quote === 'USD'
+      ? (balance * selectedLev) / rate / (marginPct / 100)
+      : (balance * selectedLev) / (marginPct / 100);
+    const maxPositionValue = quote === 'USD' ? maxUnits * rate : maxUnits;
+    const freeMargin = balance - requiredMargin;
+    const marginLevel = requiredMargin > 0 ? (balance / requiredMargin) * 100 : null;
+
+    // Pip tolerance: how many pips can move before free margin hits 0
+    // Each pip move costs: units * pipSize (in quote currency)
+    // Tolerable pips = freeMargin / pipValueTotal
+    let pipTolerance = null;
+    let pipValueDisplay = null;
+    let pipLossDisplay = null;
+
+    if (units && units > 0 && pipValueTotal > 0 && freeMargin > 0) {
+      pipTolerance = freeMargin / pipValueTotal;
+      pipValueDisplay = pipValueTotal; // cost per pip for whole position
+      pipLossDisplay = freeMargin;     // max loss = free margin
+    }
+
+    // Determine status
+    let status = 'ok', statusText = 'Innenfor grense', statusClass = 'status-ok';
+    let warnMsg = '';
+
+    if (units && units > 0) {
+      if (requiredMargin > balance) {
+        status = 'over';
+        statusText = 'Over grense';
+        statusClass = 'status-danger';
+        warnMsg = `Posisjonen krever ${fmt(requiredMargin)} USD i margin, men du har bare ${fmt(balance)} USD. Reduser posisjonsstørrelse.`;
+      } else if (requiredMargin > balance * 0.9) {
+        status = 'warn';
+        statusText = 'Nær grense';
+        statusClass = 'status-warn';
+        warnMsg = `Du bruker ${fmt((requiredMargin/balance)*100, 1)}% av tilgjengelig kapital. Det er lite rom for tap.`;
+      } else {
+        warnMsg = `Posisjonen er innenfor margin krav. Tåler ${pipTolerance ? fmt(pipTolerance, 0) + ' pips' : '—'} bevegelse mot deg.`;
+      }
+    } else {
+      warnMsg = `Med ${fmt(balance, 0)} USD og ${selectedLev}:1 gearing kan du handle opptil ${fmt(maxUnits, 0)} enheter. Skriv inn antall enheter for pip-beregning.`;
+    }
+
+    // Show results
+    const pill = document.getElementById('statusPill');
+    pill.textContent = statusText;
+    pill.className = 'status-pill ' + statusClass;
+
+    document.getElementById('maxTrade').innerHTML =
+      fmt(maxUnits, 0) + '<span class="result-main-currency">enheter</span>';
+
+    document.getElementById('requiredMargin').textContent =
+      units && units > 0 ? fmt(requiredMargin, 2) + ' USD' : '—';
+
+    document.getElementById('freeMargin').textContent =
+      units && units > 0 ? fmt(freeMargin, 2) + ' USD' : fmt(balance, 2) + ' USD';
+
+    document.getElementById('posValue').textContent =
+      units && units > 0 ? fmt(positionValue, 2) + ' USD' : fmt(maxPositionValue, 2) + ' USD';
+
+    document.getElementById('marginLevel').textContent =
+      marginLevel ? fmt(marginLevel, 1) + '%' : '∞';
+
+    const marginLevelEl = document.getElementById('marginLevel');
+    if (marginLevel && marginLevel < 110) marginLevelEl.style.color = 'var(--red)';
+    else if (marginLevel && marginLevel < 150) marginLevelEl.style.color = 'var(--orange)';
+    else marginLevelEl.style.color = 'var(--green)';
+
+    // Pip section
+    const pipSection = document.getElementById('pipSection');
+    if (pipTolerance !== null) {
+      pipSection.style.display = 'block';
+      document.getElementById('pipValue').textContent = fmt(pipTolerance, 0);
+      document.getElementById('pipWorth').textContent = fmt(pipValueDisplay, 4) + ' USD/pip';
+      document.getElementById('pipLoss').textContent = fmt(pipLossDisplay, 2) + ' USD';
+
+      // Color pip value based on risk
+      const pipEl = document.getElementById('pipValue');
+      if (pipTolerance < 20) pipEl.style.color = 'var(--red)';
+      else if (pipTolerance < 50) pipEl.style.color = 'var(--orange)';
+      else pipEl.style.color = 'var(--green)';
+    } else {
+      pipSection.style.display = 'none';
+    }
+
+    results.className = 'results show';
+
+    if (status === 'over') {
+      showWarn('danger', '🚨', warnMsg);
+    } else if (status === 'warn') {
+      showWarn('warn', '⚠️', warnMsg);
+    } else {
+      showWarn('ok', '✅', warnMsg);
+    }
+  }
+
+  function showWarn(type, icon, text) {
+    const wb = document.getElementById('warningBar');
+    wb.className = 'warning-bar ' + type + ' show';
+    document.getElementById('warnIcon').textContent = icon;
+    document.getElementById('warnText').textContent = text;
+  }
+
+  // Init slider visual
+  document.getElementById('marginSlider').style.setProperty('--pct', '80%');
+
+  // Set default rate suggestion for EUR/USD
+  document.getElementById('rate').placeholder = '1.09';
+
+  // Register service worker for PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW error:', err));
+    });
+  }
+</script>
+</body>
+</html>
